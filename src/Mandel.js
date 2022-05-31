@@ -13,15 +13,14 @@ function Mandel() {
     const [cenX, setcenX] = useState(0)
     const [cenY, setcenY] = useState(0)
 
-    
-    
+    const [wlisteners, setwlisteners] = useState(0)
+
     const [iterations, setIterations] = useState(250)
 
     const [anyHasChanged, setAnyHasChanged] = useState(true)
 
     const [response, setResponse] = useState()
-    const [httprequests, setHttpRequests] = useState(0)
-    
+
 
     const draw = (ctx) => {
         /*
@@ -32,7 +31,9 @@ function Mandel() {
         */
         if (!anyHasChanged) {
             if (response != null) {
-                let img = ctx.createImageData(ctx.canvas.width, ctx.canvas.height)
+                ctx.beginPath()
+                //let img = ctx.createImageData(ctx.canvas.width, ctx.canvas.height)
+                let img = ctx.getImageData(0, 0, cWidth, cHeight)
                 //img = makeCanvas(ctx.canvas.width, ctx.canvas.height, img, response)
 
                 /*
@@ -53,13 +54,14 @@ function Mandel() {
                     }
                 }
                 */
-               for(let i = 0; i < response.length; i++){
+                for (let i = 0; i < response.length; i++) {
                     img.data[i * 4] = response[i][0]
                     img.data[i * 4 + 1] = response[i][1]
                     img.data[i * 4 + 2] = response[i][2]
                     img.data[i * 4 + 3] = 255
-               }
+                }
                 ctx.putImageData(img, 0, 0)
+                setResponse(null)
 
             }
 
@@ -69,19 +71,19 @@ function Mandel() {
             setResponse(null)
         }
 
-        
+
         setcWidth(ctx.canvas.width)
         setcHeight(ctx.canvas.height)
-    
-        
-        httpPost('/mandelbrotCalc', cWidth, cHeight, absScale, cenX, cenY, iterations)
+
+        console.log("listeners: ", wlisteners)
+        httpPost('http://localhost:9000/', cWidth, cHeight, absScale, cenX, cenY, iterations)
 
 
 
         //let xScale = (xMax - xMin) * absScale / ctx.canvas.width
         //let yScale = (yMax - yMin) * absScale / ctx.canvas.height
 
-
+        /*
         //LOOP VARS
         let rX
         let rY
@@ -90,22 +92,9 @@ function Mandel() {
         //INNER LOOP VARS
         let xMulti
         let yMulti
-        /*
-        if (httprequests > 10) {
-            return
-        }
-        */
-       //console.log("wouldpost", absScale, anyHasChanged)
-        //httpPost('/mandelbrotCalc', cWidth, cHeight, absScale, cenX, cenY, iterations)
-        //setHttpRequests(httprequests + 1)
 
-        //for(let i = 0; i < img.data.length; i += 4) {
-
-        //}
-        //console.log("2", cWidth)
-
+        let img = ctx.createImageData(ctx.canvas.width, ctx.canvas.height)
         
-        /*
         for (let x = 0; x < cWidth; x++) {
             for (let y = 0; y < cHeight; y++) {
 
@@ -147,20 +136,22 @@ function Mandel() {
             }
             //ctx.putImageData(img, 10, 10) 
         }
+        
+        ctx.putImageData(img, 10, 10)
         */
-        //ctx.putImageData(img, 10, 10)
     }
 
     //TODO - stop adding listeners all the time.
-    
+
     window.addEventListener("wheel", (event) => {
+        setwlisteners(wlisteners + 1)
         setAnyHasChanged(true)
         let delta = -event.deltaY
         if (delta > 0) {
             setabsScale(absScale * 1.2)
             //setIterations(iterations + 20)
             setIterations(iterations * 1.05)
-            
+
             setcenX(cenX + 0.001 * (1 / absScale) * (event.x - (cWidth / 2) - cenX))
             setcenY(cenY + 0.001 * (1 / absScale) * (event.y - (cHeight / 2) - cenY))
             //cenX += 0.001 * (1 / absScale) * (event.x - (cWidth / 2) - cenX)
@@ -176,18 +167,10 @@ function Mandel() {
             //cenY -= 0.001 * (1 / absScale) * (event.y - (cHeight / 2) - cenY)
         }
     })
-    
-    const httpPost = (url, cWidth, cHeight, absScale, cenX, cenY, iterations) => {
-        console.log(JSON.stringify(
-            {
-                cWidth,
-                cHeight,
-                absScale,
-                cenX,
-                cenY,
-                iterations
-            }
-        ))
+
+
+
+    const httpPost = (url, cWidth, cHeight, absScale, cenX, cenY, iterations) => {  
         fetch(url, {
             method: 'POST',
             headers: {
@@ -203,10 +186,9 @@ function Mandel() {
             })
         }).then(res => res.json()).then(res => {
             setResponse(res)
-            console.log("response", absScale)
         })
     }
-    
+
 
 
     return <Canvas draw={draw} />
@@ -270,9 +252,9 @@ const makeCanvas = (cWidth, cHeight, img, pixels) => {
 
     for (let x = 0; x < cWidth; x++) {
         for (let y = 0; y < cHeight; y++) {
-            let curPixel =  (x * cHeight + y + 1) * 4
+            let curPixel = (x * cHeight + y + 1) * 4
             //console.log(curPixel)
-            if(curPixel === undefined){
+            if (curPixel === undefined) {
                 curPixel = [255, 255, 255, 255]
             }
 
@@ -289,7 +271,7 @@ const makeCanvas = (cWidth, cHeight, img, pixels) => {
     // x * cHeight + y + 1
 
 
-    
+
     return img
 }
 
